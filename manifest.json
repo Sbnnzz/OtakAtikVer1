@@ -1,0 +1,16 @@
+{
+  "name": "Otak Atik! Brain Twist",
+  "short_name": "Otak Atik",
+  "description": "Latihan Penalaran Umum untuk anak — fun general reasoning puzzles for kids.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF6E8",
+  "theme_color": "#FFF6E8",
+  "lang": "id",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta name="theme-color" content="#FFF6E8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #FFF6E8;
+    --bg-deep: #F5EBD6;
+    --card: #FFFFFF;
+    --ink: #2A2620;
+    --ink-soft: #6B6358;
+    --muted: #A89E8E;
+    --green: #4FB36B;
+    --green-soft: #E8F7EC;
+    --red: #E15B5B;
+    --red-soft: #FCEAEA;
+    --yellow: #F0B429;
+    --yellow-soft: #FFF4D6;
+    --board: #F2E6CC;
+    --board-edge: #E0D0AE;
+    --shadow-sm: 0 2px 0 rgba(60,40,10,0.08);
+    --shadow-md: 0 4px 0 rgba(60,40,10,0.10), 0 1px 12px rgba(60,40,10,0.04);
+    --shadow-lg: 0 6px 0 rgba(60,40,10,0.12), 0 4px 20px rgba(60,40,10,0.08);
+
+    --c-arrow: #4A90D9;   --tint-arrow: #DEEAF7;
+    --c-number: #E07B22;  --tint-number: #FBE4CB;
+    --c-shape: #9B59B6;   --tint-shape: #EADCF1;
+    --c-logic: #1FA89A;   --tint-logic: #D4EEEA;
+    --c-mix: #D4607A;     --tint-mix: #F5D8DF;
+  }
+
+  html, body { background: var(--bg); }
+
+  body {
+    font-family: 'Nunito', system-ui, sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .stage {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 14px 16px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 100vh;
+  }
+
+  /* ===== topbar ===== */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    min-height: 48px;
+  }
+  .icon-btn {
+    width: 44px; height: 44px;
+    border: none;
+    background: var(--card);
+    border-radius: 16px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .icon-btn:active { transform: translateY(2px); box-shadow: none; }
+  .icon-btn[hidden] { display: none; }
+
+  .mascot-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    flex: 1; text-align: center;
+  }
+  .mascot {
+    width: 52px; height: 52px;
+    background: linear-gradient(180deg, #FFFAF0, #FFEFC8);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem;
+    box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,0.8);
+    border: 2px solid #F2E2B5;
+    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    user-select: none;
+  }
+  .mascot.bump { animation: mascotBump 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  .mascot.shake { animation: mascotShake 0.4s ease; }
+  @keyframes mascotBump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.25) rotate(-6deg); }
+    100% { transform: scale(1); }
+  }
+  @keyframes mascotShake {
+    0%,100% { transform: translateX(0) rotate(0); }
+    25% { transform: translateX(-4px) rotate(-4deg); }
+    75% { transform: translateX(4px) rotate(4deg); }
+  }
+  .mascot-bubble {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--ink-soft);
+    background: var(--card);
+    padding: 2px 10px;
+    border-radius: 50px;
+    box-shadow: var(--shadow-sm);
+    max-width: 200px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    margin-top: 2px;
+  }
+  .mascot-bubble.show { opacity: 1; }
+
+  /* ===== settings panel ===== */
+  .settings-panel {
+    position: fixed;
+    top: 60px;
+    right: 50%;
+    transform: translateX(50%) translateY(-20px);
+    max-width: 520px;
+    width: calc(100% - 28px);
+    background: var(--card);
+    border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+    padding: 16px;
+    z-index: 60;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.18s, transform 0.18s;
+  }
+  @media (min-width: 580px) {
+    .settings-panel { right: 50%; transform: translateX(260px) translateY(-20px); width: 280px; }
+    .settings-panel.show { transform: translateX(260px) translateY(0); }
+  }
+  .settings-panel.show { display: block; opacity: 1; transform: translateX(50%) translateY(0); }
+  .settings-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 4px;
+    border-bottom: 1px solid #F2E8D4;
+    gap: 12px;
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row .lbl {
+    font-weight: 800; font-size: 0.95rem; display: flex; gap: 8px; align-items: center;
+  }
+  .seg {
+    display: flex; background: var(--bg-deep);
+    border-radius: 50px; padding: 3px;
+  }
+  .seg button {
+    border: none; background: transparent;
+    padding: 6px 14px; border-radius: 50px;
+    font-family: inherit; font-weight: 800; font-size: 0.8rem;
+    cursor: pointer; color: var(--ink-soft);
+    transition: background 0.15s, color 0.15s;
+  }
+  .seg button.on { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }
+  .scrim {
+    position: fixed; inset: 0; background: rgba(40,30,10,0.18);
+    z-index: 55; display: none;
+  }
+  .scrim.show { display: block; }
+
+  /* ===== screens ===== */
+  .screen { display: none; flex-direction: column; align-items: stretch; gap: 12px; flex: 1; }
+  .screen.active { display: flex; }
+
+  /* ===== home ===== */
+  h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.9rem, 7vw, 2.4rem);
+    text-align: center;
+    color: var(--ink);
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--ink-soft);
+    font-weight: 700;
+    font-size: 0.92rem;
+    margin-top: -4px;
+    margin-bottom: 4px;
+  }
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin: 6px 0 -2px;
+  }
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .cat-card {
+    border: 3px solid transparent;
+    border-radius: 18px;
+    background: var(--tint);
+    box-shadow: var(--shadow-sm);
+    padding: 14px 8px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.1s, box-shadow 0.1s, border-color 0.15s;
+    min-height: 96px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .cat-card:active { transform: translateY(2px); box-shadow: none; }
+  .cat-card.selected { border-color: var(--sel); box-shadow: var(--shadow-md); }
+  .cat-card .ico { font-size: 2rem; display: block; margin-bottom: 4px; line-height: 1; }
+  .cat-card .nm { font-family: 'Fredoka One', cursive; font-size: 1rem; color: var(--ink); line-height: 1.1; }
+  .cat-card .ds { font-size: 0.72rem; color: var(--ink-soft); font-weight: 700; margin-top: 2px; line-height: 1.2; }
+  .cat-card.wide { grid-column: 1 / -1; flex-direction: row; padding: 12px 16px; gap: 14px; text-align: left; justify-content: flex-start; }
+  .cat-card.wide .ico { font-size: 2.2rem; margin: 0; }
+  .cat-card.wide .text-wrap { display: flex; flex-direction: column; }
+  .cat-card.wide .ds { margin-top: 0; }
+
+  .mode-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .mode-card {
+    border: 3px solid transparent;
+    border-radius: 16px;
+    background: var(--card);
+    box-shadow: var(--shadow-sm);
+    padding: 12px 6px 10px;
+    cursor: pointer;
+    text-align: center;
+    min-height: 78px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: transform 0.1s, box-shadow 0.1s, border-color 0.15s;
+  }
+  .mode-card:active { transform: translateY(2px); box-shadow: none; }
+  .mode-card.selected { border-color: var(--green); background: var(--green-soft); }
+  .mode-card .ico { font-size: 1.5rem; display: block; line-height: 1; }
+  .mode-card .nm { font-family: 'Fredoka One', cursive; font-size: 0.85rem; margin-top: 4px; line-height: 1.1; }
+  .mode-card .ds { font-size: 0.62rem; color: var(--ink-soft); font-weight: 700; margin-top: 2px; line-height: 1.1; }
+
+  .big-btn {
+    margin-top: 6px;
+    padding: 16px 0;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.25rem;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 0 #000, 0 6px 20px rgba(0,0,0,0.15);
+    transition: transform 0.1s, box-shadow 0.1s;
+    width: 100%;
+  }
+  .big-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #000; }
+  .big-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: 0 4px 0 #000; }
+
+  .badge-shelf {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+  .badge-chip {
+    background: var(--card);
+    border-radius: 50px;
+    box-shadow: var(--shadow-sm);
+    padding: 5px 12px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .badge-chip.locked { opacity: 0.32; filter: grayscale(1); }
+
+  .stats-line {
+    text-align: center;
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.78rem;
+    margin-top: 4px;
+  }
+
+  /* ===== game ===== */
+  .hud {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    border-radius: 18px;
+    padding: 10px 8px;
+    box-shadow: var(--shadow-sm);
+    justify-content: space-around;
+    align-items: center;
+  }
+  .hud-item { text-align: center; flex: 1; min-width: 0; }
+  .hud-item + .hud-item { border-left: 1px solid #F2E8D4; }
+  .hud-num { font-family: 'Fredoka One', cursive; font-size: 1.25rem; line-height: 1; color: var(--ink); }
+  .hud-num.timer-low { color: var(--red); animation: pulse 0.8s infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+  .hud-label { font-size: 0.58rem; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  .q-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    text-align: center;
+    color: var(--ink);
+    margin: 4px 0 0;
+  }
+
+  .board {
+    background: var(--board);
+    border-radius: 22px;
+    padding: 16px;
+    box-shadow: inset 0 -3px 0 var(--board-edge), inset 0 1px 0 rgba(255,255,255,0.6);
+    display: flex; justify-content: center;
+  }
+
+  .grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(64px, 88px));
+    grid-template-rows: repeat(3, minmax(64px, 88px));
+    gap: 8px;
+  }
+  .seq-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .analogy-row { display: flex; gap: 6px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .analogy-sep { font-family: 'Fredoka One', cursive; font-size: 1.4rem; color: var(--muted); padding: 0 2px; }
+
+  .tile {
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.2rem;
+    background: #FFFFFF;
+    box-shadow: 0 2px 0 rgba(60,40,10,0.10), inset 0 1px 0 rgba(255,255,255,0.3);
+    user-select: none;
+    border: 2px solid rgba(0,0,0,0.06);
+    width: 100%; height: 100%;
+    line-height: 1; text-align: center;
+  }
+  .seq-row .tile, .analogy-row .tile { width: 60px; height: 60px; font-size: 1.5rem; flex: none; }
+  .tile.num { font-family: 'Fredoka One', cursive; }
+  .tile.colored { color: #fff; }
+  .tile.missing {
+    background: #E8D8B8;
+    border: 3px dashed #B89F70;
+    box-shadow: none;
+    color: #B89F70;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.6rem;
+  }
+  .tile.reveal { animation: pop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .choices {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .choices.four { grid-template-columns: repeat(2, 1fr); max-width: 320px; margin: 0 auto; }
+  .choice-btn {
+    height: 80px;
+    border-radius: 16px;
+    border: 3px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    cursor: pointer;
+    background: var(--card);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.1s, box-shadow 0.1s, border-color 0.15s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .choice-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+  .choice-btn .face { font-size: 1.8rem; line-height: 1.1; word-break: break-all; padding: 0 4px; text-align: center; }
+  .choice-btn .face.num { font-family: 'Fredoka One', cursive; font-size: 1.55rem; }
+  .choice-btn .letter { font-family: 'Fredoka One', cursive; font-size: 0.65rem; color: var(--muted); line-height: 1; }
+  .choice-btn.correct {
+    border-color: var(--green);
+    background: var(--green-soft);
+    animation: correctPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .choice-btn.wrong {
+    border-color: var(--red);
+    background: var(--red-soft);
+    animation: shake 0.4s ease;
+  }
+  @keyframes correctPop {
+    0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); } 40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); } 80% { transform: translateX(3px); }
+  }
+
+  .feedback {
+    min-height: 1.5rem;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+  .feedback.correct { color: var(--green); }
+  .feedback.wrong { color: var(--red); }
+
+  .hint-box {
+    display: none;
+    background: var(--yellow-soft);
+    border: 2px solid var(--yellow);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #7A5C00;
+    text-align: center;
+  }
+  .hint-box.show { display: block; animation: pop 0.3s ease; }
+
+  .game-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .hint-btn {
+    padding: 12px 22px;
+    background: var(--yellow);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #C49415;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .hint-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+  .hint-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .next-btn {
+    display: none;
+    padding: 12px 28px;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #000;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .next-btn:active { transform: translateY(2px); box-shadow: none; }
+
+  /* ===== result ===== */
+  .result-card {
+    background: var(--card);
+    border-radius: 24px;
+    box-shadow: var(--shadow-md);
+    padding: 28px 24px;
+    text-align: center;
+    margin: 16px auto;
+    max-width: 420px;
+    width: 100%;
+  }
+  .result-card h2 { font-family: 'Fredoka One', cursive; font-size: 1.55rem; margin-bottom: 4px; }
+  .stars { font-size: 2.4rem; letter-spacing: 4px; margin: 10px 0; }
+  .stars .dim { opacity: 0.22; filter: grayscale(1); }
+  .result-line { font-weight: 800; font-size: 1rem; margin: 4px 0; }
+  .result-sub { color: var(--muted); font-weight: 700; font-size: 0.85rem; }
+  .result-card .big-btn { margin-top: 16px; }
+  .result-card .ghost-btn {
+    margin-top: 10px;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 8px;
+  }
+
+  /* ===== toast ===== */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--ink);
+    color: #fff;
+    border-radius: 50px;
+    padding: 12px 22px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 80;
+    display: flex; gap: 8px; align-items: center;
+    max-width: 90vw;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ===== small phones ===== */
+  @media (max-width: 380px) {
+    .stage { padding: 10px 12px 24px; }
+    .grid3 { grid-template-columns: repeat(3, 24vw); grid-template-rows: repeat(3, 24vw); }
+    .tile { font-size: 1.7rem; }
+    .seq-row .tile, .analogy-row .tile { width: 52px; height: 52px; font-size: 1.3rem; }
+    .choices { gap: 6px; }
+    .choice-btn { height: 72px; }
+    .choice-btn .face { font-size: 1.55rem; }
+    .choice-btn .face.num { font-size: 1.35rem; }
+    .hud-num { font-size: 1.1rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</helmet>
+
+<div class="stage">
+  <div class="topbar">
+    <button class="icon-btn" id="back-btn" hidden aria-label="back">←</button>
+    <div class="mascot-wrap">
+      <div class="mascot" id="mascot"><span id="mascot-face">🦉</span></div>
+      <div class="mascot-bubble" id="mascot-bubble"></div>
+    </div>
+    <button class="icon-btn" id="settings-btn" aria-label="settings">⚙️</button>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="settings-panel" id="settings-panel">
+    <div class="settings-row">
+      <span class="lbl">🌐 Bahasa</span>
+      <div class="seg" id="lang-seg">
+        <button data-val="id">ID</button>
+        <button data-val="en">EN</button>
+      </div>
+    </div>
+    <div class="settings-row">
+      <span class="lbl">🔊 <span data-t="settingSound">Suara</span></span>
+      <div class="seg" id="sound-seg">
+        <button data-val="on" data-t="on">On</button>
+        <button data-val="off" data-t="off">Off</button>
+      </div>
+    </div>
+    <div class="settings-row">
+      <span class="lbl">🗑️ <span data-t="settingReset">Reset progres</span></span>
+      <button class="icon-btn" id="reset-btn" style="width:auto; padding: 0 14px; font-size: 0.85rem; font-family: inherit; font-weight: 800;">Reset</button>
+    </div>
+  </div>
+
+  <div class="screen active" id="screen-home">
+    <h1><span>🦉</span> <span data-t="title">Otak Atik!</span></h1>
+    <p class="subtitle" data-t="subtitle"></p>
+    <p class="section-label" data-t="pickCat"></p>
+    <div class="cat-grid" id="cat-grid"></div>
+    <p class="section-label" data-t="pickMode"></p>
+    <div class="mode-row" id="mode-row"></div>
+    <button class="big-btn" id="play-btn" data-t="play"></button>
+    <p class="section-label" data-t="badges"></p>
+    <div class="badge-shelf" id="badge-shelf"></div>
+    <p class="stats-line" id="stats-line"></p>
+  </div>
+
+  <div class="screen" id="screen-game">
+    <div class="hud" id="hud"></div>
+    <p class="q-title" id="q-title"></p>
+    <div class="board" id="board-wrap"><div id="puzzle-area"></div></div>
+    <p class="section-label" id="choices-label"></p>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="game-actions">
+      <button class="hint-btn" id="hint-btn">💡 Petunjuk</button>
+      <button class="next-btn" id="next-btn">Lanjut →</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-result">
+    <div class="result-card">
+      <h2 id="result-title"></h2>
+      <div class="stars" id="result-stars"></div>
+      <p class="result-line" id="result-score"></p>
+      <p class="result-sub" id="result-best"></p>
+      <button class="big-btn" id="result-next"></button>
+      <button class="ghost-btn" id="result-home"></button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() {
+    /* ============ utils ============ */
+    const mod = (n, m) => ((n % m) + m) % m;
+    const rnd = (n) => Math.floor(Math.random() * n);
+    const pick = (arr) => arr[rnd(arr.length)];
+    const shuffle = (arr) => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = rnd(i + 1);
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+    const store = {
+      get(k, fallback) {
+        try { const v = localStorage.getItem('pu_' + k); return v === null ? fallback : JSON.parse(v); }
+        catch (e) { return fallback; }
+      },
+      set(k, v) { try { localStorage.setItem('pu_' + k, JSON.stringify(v)); } catch (e) {} }
+    };
+
+    /* ============ audio ============ */
+    const audio = {
+      ctx: null,
+      ensure() {
+        if (this.ctx) return;
+        const C = window.AudioContext || window.webkitAudioContext;
+        if (C) this.ctx = new C();
+      },
+      tone(freq, dur, type, vol) {
+        if (!soundOn || !this.ctx) return;
+        const o = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        o.type = type || 'sine'; o.frequency.value = freq;
+        o.connect(g); g.connect(this.ctx.destination);
+        const v = vol == null ? 0.15 : vol;
+        g.gain.setValueAtTime(v, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
+        o.start(); o.stop(this.ctx.currentTime + dur);
+      },
+      correct() { this.ensure(); this.tone(660, 0.08); setTimeout(() => this.tone(990, 0.14), 80); },
+      wrong()   { this.ensure(); this.tone(200, 0.22, 'square', 0.12); },
+      tick()    { this.ensure(); this.tone(700, 0.04, 'triangle', 0.08); },
+      win()     { this.ensure(); this.tone(523,0.1); setTimeout(()=>this.tone(659,0.1),100); setTimeout(()=>this.tone(784,0.18),200); }
+    };
+    let soundOn = store.get('sound', false);
+
+    /* ============ language ============ */
+    let lang = store.get('lang', 'id');
+
+    const T = {
+      id: {
+        title: 'Otak Atik!',
+        subtitle: 'Latihan Penalaran Umum seru untuk otak hebatmu',
+        pickCat: 'Pilih jenis teka-teki',
+        pickMode: 'Pilih mode main',
+        play: 'Main! 🚀',
+        badges: 'Lencana kamu',
+        pickTile: 'Pilih jawabannya',
+        pickOdd: 'Klik yang TIDAK sekelompok',
+        hint: '💡 Petunjuk',
+        next: 'Lanjut →',
+        finish: 'Selesai →',
+        settingSound: 'Suara',
+        settingReset: 'Reset progres',
+        on: 'On', off: 'Off',
+        resetConfirm: 'Hapus semua progres dan lencana?',
+        correctMsgs: ['✓ Benar! Hebat!', '✓ Tepat sekali! 🎉', '✓ Mantap!', '✓ Kamu jago! ⭐'],
+        wrongMsgs: ['✗ Belum tepat, lihat jawaban hijau ya.', '✗ Hampir! Perhatikan polanya.', '✗ Coba lagi di soal berikutnya!'],
+        qArrows: 'Panah apa yang hilang?',
+        qNumbers: 'Angka apa selanjutnya?',
+        qShapes: 'Bentuk apa yang hilang?',
+        qAnalogy: 'Lengkapi pasangannya!',
+        qOdd: 'Mana yang berbeda?',
+        hudScore: 'Benar', hudQ: 'Soal', hudStreak: 'Beruntun', hudTime: 'Waktu', hudLevel: 'Level',
+        catArrow: ['🧭','Panah','pola arah panah'],
+        catNumber: ['🔢','Angka','deret angka'],
+        catShape: ['🔷','Bentuk','pola bentuk'],
+        catLogic: ['🤔','Logika','analogi dan beda'],
+        catMix: ['🎲','Campur Semua','semua jenis acak'],
+        modeLevel: ['🪜','Level','naik tingkat'],
+        modeEndless: ['♾️','Tanpa Batas','kejar beruntun'],
+        modeTimed: ['⏱️','60 Detik','lawan waktu'],
+        levelDone: 'Level {n} selesai!',
+        timeUp: 'Waktu habis!',
+        runOver: 'Permainan selesai!',
+        scoreOf: 'Benar {s} dari {t}',
+        timedScore: 'Kamu menjawab {s} soal dengan benar!',
+        streakScore: 'Beruntun terbaikmu: {s}',
+        best: 'Rekor terbaik: {b}',
+        newBest: '🏆 Rekor baru!',
+        nextLevel: 'Level Berikutnya 🪜',
+        playAgain: 'Main Lagi 🔁',
+        home: '🏠 Menu Utama',
+        tryAgainStars: 'Dapatkan minimal 1 ⭐ untuk lanjut level',
+        statsLine: 'Total jawaban benar sepanjang masa: {n}',
+        newBadge: 'Lencana baru:',
+        mascotHome: 'Halo, otak hebat!',
+        mascotThinking: 'Hmm…',
+        mascotCorrect: 'Yes!',
+        mascotWrong: 'Wah, hampir!',
+        mascotStreak: 'Beruntun {n}!',
+        mascotWin: 'Mantap!',
+        badgeNames: {
+          first: '🌟 Bintang Pertama',
+          streak5: '🔥 Beruntun 5',
+          streak10: '⚡ Beruntun 10',
+          perfect: '⭐ Level Sempurna',
+          brain50: '🧠 50 Jawaban Benar',
+          explorer: '🧭 Penjelajah'
+        }
+      },
+      en: {
+        title: 'Brain Twist!',
+        subtitle: 'Fun general reasoning training for your awesome brain',
+        pickCat: 'Pick a puzzle type',
+        pickMode: 'Pick a game mode',
+        play: 'Play! 🚀',
+        badges: 'Your badges',
+        pickTile: 'Pick the answer',
+        pickOdd: 'Click the one that does NOT belong',
+        hint: '💡 Hint',
+        next: 'Next →',
+        finish: 'Finish →',
+        settingSound: 'Sound',
+        settingReset: 'Reset progress',
+        on: 'On', off: 'Off',
+        resetConfirm: 'Clear all progress and badges?',
+        correctMsgs: ['✓ Correct! Great job!', '✓ That is right! 🎉', '✓ Nailed it!', '✓ You got it! ⭐'],
+        wrongMsgs: ['✗ Not quite, check the green answer.', '✗ Almost! Look at the pattern.', '✗ Try again on the next one!'],
+        qArrows: 'Which arrow is missing?',
+        qNumbers: 'What number comes next?',
+        qShapes: 'Which shape is missing?',
+        qAnalogy: 'Complete the pair!',
+        qOdd: 'Which one is different?',
+        hudScore: 'Correct', hudQ: 'Q', hudStreak: 'Streak', hudTime: 'Time', hudLevel: 'Level',
+        catArrow: ['🧭','Arrows','arrow direction patterns'],
+        catNumber: ['🔢','Numbers','number sequences'],
+        catShape: ['🔷','Shapes','shape patterns'],
+        catLogic: ['🤔','Logic','analogy and odd one out'],
+        catMix: ['🎲','Mix Everything','all types randomly'],
+        modeLevel: ['🪜','Levels','climb up'],
+        modeEndless: ['♾️','Endless','chase the streak'],
+        modeTimed: ['⏱️','60 Seconds','beat the clock'],
+        levelDone: 'Level {n} complete!',
+        timeUp: 'Time is up!',
+        runOver: 'Run over!',
+        scoreOf: 'Correct {s} of {t}',
+        timedScore: 'You answered {s} questions correctly!',
+        streakScore: 'Your best streak: {s}',
+        best: 'Best record: {b}',
+        newBest: '🏆 New record!',
+        nextLevel: 'Next Level 🪜',
+        playAgain: 'Play Again 🔁',
+        home: '🏠 Main Menu',
+        tryAgainStars: 'Get at least 1 ⭐ to unlock the next level',
+        statsLine: 'All-time correct answers: {n}',
+        newBadge: 'New badge:',
+        mascotHome: 'Hi brainy!',
+        mascotThinking: 'Hmm…',
+        mascotCorrect: 'Yes!',
+        mascotWrong: 'So close!',
+        mascotStreak: 'Streak {n}!',
+        mascotWin: 'Awesome!',
+        badgeNames: {
+          first: '🌟 First Star',
+          streak5: '🔥 Streak 5',
+          streak10: '⚡ Streak 10',
+          perfect: '⭐ Perfect Level',
+          brain50: '🧠 50 Correct Answers',
+          explorer: '🧭 Explorer'
+        }
+      }
+    };
+    const t = (key) => T[lang][key];
+    const tf = (key, vars) => {
+      let s = T[lang][key];
+      for (const k in vars) s = s.replace('{' + k + '}', vars[k]);
+      return s;
+    };
+
+    /* ============ mascot ============ */
+    const mascotEl = document.getElementById('mascot');
+    const mascotFace = document.getElementById('mascot-face');
+    const mascotBubble = document.getElementById('mascot-bubble');
+    let bubbleTimer = null;
+    function setMascot(face, msg, anim) {
+      mascotFace.textContent = face;
+      if (anim) {
+        mascotEl.classList.remove('bump','shake');
+        void mascotEl.offsetWidth;
+        mascotEl.classList.add(anim);
+      }
+      if (msg) {
+        mascotBubble.textContent = msg;
+        mascotBubble.classList.add('show');
+        clearTimeout(bubbleTimer);
+        bubbleTimer = setTimeout(() => mascotBubble.classList.remove('show'), 1800);
+      } else {
+        mascotBubble.classList.remove('show');
+      }
+    }
+
+    /* ============ puzzles ============ */
+    const ARROWS = ['↑','↗','→','↘','↓','↙','←','↖'];
+    const COLORS = ['#5BA85A','#E07B22','#D94F4F','#4A90D9','#9B59B6','#18A899','#E8B020','#D4607A'];
+    const SHAPES = ['⭐','❤️','🔷','🟢','🔺','🟣'];
+
+    function makeGrid3(el, cells, missingIdx) {
+      const g = document.createElement('div');
+      g.className = 'grid3';
+      cells.forEach((c, i) => {
+        const d = document.createElement('div');
+        if (i === missingIdx) {
+          d.className = 'tile missing';
+          d.textContent = '?';
+        } else {
+          d.className = 'tile' + (c.color ? ' colored' : '') + (c.num ? ' num' : '');
+          if (c.color) d.style.background = c.color;
+          if (c.fontSize) d.style.fontSize = c.fontSize;
+          d.textContent = c.face;
+        }
+        g.appendChild(d);
+      });
+      el.appendChild(g);
+      return g;
+    }
+
+    /* ---- 1. ARROWS (fixed color-cheat) ----
+       d=1: each ROW is a single color (visual rhythm) but ALL options
+            wear the answer's row color so kid must read the arrow shape.
+       d=2-3: grid colors are randomized per-cell (no row pattern). All
+            options share one neutral color. Pure arrow reasoning. */
+    function genArrows(d) {
+      const type = d === 1 ? pick(['same_row','same_col']) : pick(['rotate_row','rotate_col','flip_row']);
+      const step = d === 2 ? pick([1,2]) : pick([2,3,5]);
+      const grid = [];
+      let explain;
+
+      if (type === 'same_row' || type === 'same_col') {
+        for (let a = 0; a < 3; a++) {
+          const arrow = pick(ARROWS), color = COLORS[(a * 2) % COLORS.length];
+          for (let b = 0; b < 3; b++) {
+            const idx = type === 'same_row' ? a * 3 + b : b * 3 + a;
+            grid[idx] = { face: arrow, color };
+          }
+        }
+        explain = type === 'same_row'
+          ? { en: 'Every row uses the same arrow. The last row needs that same arrow.', id: 'Setiap baris memakai panah yang sama. Baris terakhir butuh panah yang sama juga.' }
+          : { en: 'Every column uses the same arrow. The last column needs that same arrow.', id: 'Setiap kolom memakai panah yang sama. Kolom terakhir butuh panah yang sama juga.' };
+      } else if (type === 'flip_row') {
+        for (let a = 0; a < 3; a++) {
+          const base = rnd(8);
+          for (let b = 0; b < 3; b++) {
+            const idx = a * 3 + b;
+            grid[idx] = { face: ARROWS[mod(base + b * 4, 8)], color: pick(COLORS) };
+          }
+        }
+        explain = { en: 'Each row goes arrow → opposite → arrow. The pattern flips by 180 degrees.', id: 'Setiap baris: panah → kebalikannya → panah lagi. Polanya membalik 180 derajat.' };
+      } else {
+        for (let a = 0; a < 3; a++) {
+          const base = rnd(8);
+          for (let b = 0; b < 3; b++) {
+            const idx = type === 'rotate_row' ? a * 3 + b : b * 3 + a;
+            grid[idx] = { face: ARROWS[mod(base + b * step, 8)], color: d === 1 ? COLORS[(a*2)%COLORS.length] : pick(COLORS) };
+          }
+        }
+        const dir = type === 'rotate_row' ? { en: 'row, left to right', id: 'baris, dari kiri ke kanan' } : { en: 'column, top to bottom', id: 'kolom, dari atas ke bawah' };
+        explain = {
+          en: `In each ${dir.en}, the arrow turns ${step} step${step > 1 ? 's' : ''} clockwise (1 step = 45°).`,
+          id: `Di setiap ${dir.id}, panah berputar ${step} langkah searah jarum jam (1 langkah = 45°).`
+        };
+      }
+
+      const answer = grid[8];
+      /* THE FIX: all options share the answer's color so kids must read the shape. */
+      const optionColor = answer.color;
+      const seen = new Set([answer.face]);
+      const wrongs = [];
+      while (wrongs.length < 5) {
+        const f = pick(ARROWS);
+        if (!seen.has(f)) { seen.add(f); wrongs.push({ face: f, color: optionColor }); }
+      }
+      const options = shuffle([...wrongs, { face: answer.face, color: optionColor }]);
+      return {
+        kind: 'arrows',
+        qTitle: t('qArrows'),
+        render(el) { makeGrid3(el, grid, 8); },
+        options,
+        correctIdx: options.findIndex(o => o.face === answer.face),
+        answer,
+        gridMissing: 8,
+        grid,
+        explain
+      };
+    }
+
+    /* ---- 2. NUMBERS ---- */
+    function genNumbers(d) {
+      let seq = [], explain;
+      if (d === 1) {
+        const op = pick(['+','-']);
+        const k = rnd(5) + 1;
+        const start = op === '+' ? rnd(10) + 1 : 6 * k + rnd(10) + 1;
+        for (let i = 0; i < 6; i++) seq.push(op === '+' ? start + k * i : start - k * i);
+        explain = op === '+'
+          ? { en: `Each number goes up by ${k}.`, id: `Setiap angka bertambah ${k}.` }
+          : { en: `Each number goes down by ${k}.`, id: `Setiap angka berkurang ${k}.` };
+      } else if (d === 2) {
+        const sub = pick(['x2','alt']);
+        if (sub === 'x2') {
+          const start = rnd(3) + 1;
+          for (let i = 0; i < 6; i++) seq.push(start * Math.pow(2, i));
+          explain = { en: 'Each number is doubled (×2).', id: 'Setiap angka dikali 2.' };
+        } else {
+          const a = rnd(4) + 1; let b = rnd(4) + 2;
+          if (b === a) b++;
+          let v = rnd(8) + 1;
+          for (let i = 0; i < 6; i++) { seq.push(v); v += (i % 2 === 0 ? a : b); }
+          explain = { en: `Jumps alternate: +${a}, +${b}, +${a}, +${b}...`, id: `Lompatan bergantian: +${a}, +${b}, +${a}, +${b}...` };
+        }
+      } else {
+        const sub = pick(['square','grow','fib']);
+        if (sub === 'square') {
+          const s = rnd(3) + 1;
+          for (let i = 0; i < 6; i++) seq.push((s + i) * (s + i));
+          explain = { en: `These are square numbers: ${s}×${s}, ${s+1}×${s+1}, ...`, id: `Ini bilangan kuadrat: ${s}×${s}, ${s+1}×${s+1}, ...` };
+        } else if (sub === 'grow') {
+          let v = rnd(5) + 1, k = rnd(2) + 1;
+          for (let i = 0; i < 6; i++) { seq.push(v); v += k; k++; }
+          explain = { en: 'The jump grows by 1 each time (+2, +3, +4, ...).', id: 'Lompatannya bertambah 1 setiap kali (+2, +3, +4, ...).' };
+        } else {
+          let a = rnd(3) + 1, b = a + rnd(3) + 1;
+          seq = [a, b];
+          for (let i = 2; i < 6; i++) seq.push(seq[i-1] + seq[i-2]);
+          explain = { en: 'Each number is the sum of the two before it.', id: 'Setiap angka adalah jumlah dua angka sebelumnya.' };
+        }
+      }
+      const answer = seq[5];
+      const set = new Set([answer]);
+      const wrongs = [];
+      const deltas = [1, -1, 2, -2, 3, 5, -3, 4, seq[5] - seq[4], -(seq[5] - seq[4])];
+      for (const dd of shuffle(deltas)) {
+        if (wrongs.length >= 5) break;
+        const v = answer + dd;
+        if (v > 0 && !set.has(v)) { set.add(v); wrongs.push(v); }
+      }
+      while (wrongs.length < 5) {
+        const v = answer + rnd(12) + 6;
+        if (!set.has(v)) { set.add(v); wrongs.push(v); }
+      }
+      const options = shuffle([...wrongs, answer]);
+      return {
+        kind: 'numbers',
+        qTitle: t('qNumbers'),
+        render(el) {
+          const row = document.createElement('div');
+          row.className = 'seq-row';
+          seq.forEach((n, i) => {
+            const dv = document.createElement('div');
+            if (i === 5) { dv.className = 'tile missing'; dv.textContent = '?'; }
+            else { dv.className = 'tile num'; dv.textContent = n; }
+            row.appendChild(dv);
+          });
+          el.appendChild(row);
+        },
+        options: options.map(o => ({ face: String(o), num: true })),
+        correctIdx: options.indexOf(answer),
+        answer: { face: String(answer), num: true },
+        explain
+      };
+    }
+
+    /* ---- 3. SHAPES (fixed shape-cheat) ----
+       All 6 options use the SAME shape as the answer; only count/size varies.
+       Kid must count or measure size, not just match shape. */
+    function genShapes(d) {
+      const sub = d === 1 ? 'count' : pick(['count','size']);
+      const rowShapes = shuffle(SHAPES).slice(0, 3);
+      const grid = [];
+      let explain;
+
+      if (sub === 'count') {
+        const counts = d === 3 ? [2,3,4] : [1,2,3];
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            const n = counts[c];
+            grid[r*3+c] = { face: rowShapes[r].repeat(n), count: n, baseShape: rowShapes[r], fontSize: n >= 4 ? '1.05rem' : n === 3 ? '1.25rem' : '1.7rem' };
+          }
+        }
+        explain = {
+          en: `Across each row the shape stays the same but the count grows: ${counts.join(', ')}.`,
+          id: `Di setiap baris bentuknya sama tapi jumlahnya bertambah: ${counts.join(', ')}.`
+        };
+      } else {
+        const sizes = ['1.1rem','1.8rem','2.6rem'];
+        for (let r = 0; r < 3; r++) {
+          for (let c = 0; c < 3; c++) {
+            grid[r*3+c] = { face: rowShapes[r], fontSize: sizes[c], sizeIdx: c, baseShape: rowShapes[r] };
+          }
+        }
+        explain = {
+          en: 'Across each row the shape stays the same but grows: small, medium, large.',
+          id: 'Di setiap baris bentuknya sama tapi makin besar: kecil, sedang, besar.'
+        };
+      }
+
+      const answer = grid[8];
+      /* fix: all options use the answer's base shape */
+      const baseShape = answer.baseShape;
+      const seen = new Set([answer.face + (answer.fontSize || '')]);
+      const wrongs = [];
+      let guard = 0;
+      while (wrongs.length < 5 && guard++ < 200) {
+        let cand;
+        if (sub === 'count') {
+          const candCounts = d === 3 ? [1,2,3,4,5,6] : [1,2,3,4,5];
+          const n = pick(candCounts.filter(x => x !== answer.count));
+          cand = { face: baseShape.repeat(n), fontSize: n >= 4 ? '1.05rem' : n === 3 ? '1.25rem' : '1.7rem' };
+        } else {
+          const allSizes = ['0.8rem','1.1rem','1.5rem','1.8rem','2.2rem','2.6rem','3rem'];
+          const si = rnd(allSizes.length);
+          cand = { face: baseShape, fontSize: allSizes[si] };
+        }
+        const key = cand.face + cand.fontSize;
+        if (!seen.has(key)) { seen.add(key); wrongs.push(cand); }
+      }
+      const options = shuffle([...wrongs, { face: answer.face, fontSize: answer.fontSize }]);
+      return {
+        kind: 'shapes',
+        qTitle: t('qShapes'),
+        render(el) { makeGrid3(el, grid, 8); },
+        options: options.map(o => ({ face: o.face, fontSize: o.fontSize })),
+        correctIdx: options.findIndex(o => o.face === answer.face && o.fontSize === answer.fontSize),
+        answer,
+        grid,
+        gridMissing: 8,
+        explain
+      };
+    }
+
+    /* ---- 4. LOGIC ---- */
+    const ANALOGY_GROUPS = [
+      { rel: { en: 'the animal and what it makes', id: 'hewan dan apa yang dihasilkannya' },
+        pairs: [['🐝','🍯'],['🐔','🥚'],['🐮','🥛'],['🕷️','🕸️'],['🐑','🧶']] },
+      { rel: { en: 'the young one and the grown-up', id: 'yang kecil dan yang dewasa' },
+        pairs: [['🐛','🦋'],['🥚','🐣'],['🌱','🌳'],['👶','🧑']] },
+      { rel: { en: 'the animal and where it lives', id: 'hewan dan tempat tinggalnya' },
+        pairs: [['🐟','🌊'],['🐫','🏜️'],['🐧','🧊'],['🐦','🪹']] },
+      { rel: { en: 'the tool and what it is for', id: 'alat dan kegunaannya' },
+        pairs: [['✏️','📝'],['🔑','🔒'],['🪥','🦷'],['🧹','🧺']] }
+    ];
+    const ODD_GROUPS = [
+      { name: { en: 'fruits', id: 'buah-buahan' }, items: ['🍎','🍌','🍇','🍓','🍊','🍉'] },
+      { name: { en: 'animals', id: 'hewan' }, items: ['🐶','🐱','🐭','🐰','🦊','🐼'] },
+      { name: { en: 'vehicles', id: 'kendaraan' }, items: ['🚗','🚌','🚲','✈️','🚂','🚜'] },
+      { name: { en: 'sports', id: 'olahraga' }, items: ['⚽','🏀','🎾','🏐','⚾'] },
+      { name: { en: 'sea animals', id: 'hewan laut' }, items: ['🐟','🐙','🦀','🐬','🦈'] },
+      { name: { en: 'food', id: 'makanan' }, items: ['🍕','🍔','🍜','🍩','🍪'] }
+    ];
+
+    function genLogic(d) {
+      const sub = d >= 3 ? pick(['analogy','odd','numAnalogy']) : pick(['analogy','odd']);
+      if (sub === 'numAnalogy') {
+        const rel = pick([
+          { f: x => x * 2, en: 'the second number is double the first', id: 'angka kedua adalah dua kali angka pertama' },
+          { f: x => x * 3, en: 'the second number is triple the first', id: 'angka kedua adalah tiga kali angka pertama' },
+          { f: x => x + 5, en: 'the second number is the first plus 5', id: 'angka kedua adalah angka pertama ditambah 5' },
+          { f: x => x - 2, en: 'the second number is the first minus 2', id: 'angka kedua adalah angka pertama dikurangi 2' }
+        ]);
+        const a = rnd(6) + 3;
+        let c = rnd(6) + 3; if (c === a) c = a + 1;
+        const b = rel.f(a), answer = rel.f(c);
+        const set = new Set([answer]);
+        const wrongs = [];
+        for (const dd of shuffle([1,-1,2,-2,3,c,a])) {
+          if (wrongs.length >= 5) break;
+          const v = answer + dd;
+          if (v > 0 && !set.has(v)) { set.add(v); wrongs.push(v); }
+        }
+        while (wrongs.length < 5) { const v = answer + rnd(10) + 4; if (!set.has(v)) { set.add(v); wrongs.push(v); } }
+        const options = shuffle([...wrongs, answer]);
+        return {
+          kind: 'logic',
+          qTitle: t('qAnalogy'),
+          render(el) {
+            const row = document.createElement('div');
+            row.className = 'analogy-row';
+            [[String(a),'num'],[':'],[String(b),'num'],['::'],[String(c),'num'],[':'],['?','missing']].forEach(([txt, cls]) => {
+              const dv = document.createElement('div');
+              if (cls === 'num') { dv.className = 'tile num'; dv.textContent = txt; }
+              else if (cls === 'missing') { dv.className = 'tile missing'; dv.textContent = '?'; }
+              else { dv.className = 'analogy-sep'; dv.textContent = txt; }
+              row.appendChild(dv);
+            });
+            el.appendChild(row);
+          },
+          options: options.map(o => ({ face: String(o), num: true })),
+          correctIdx: options.indexOf(answer),
+          answer: { face: String(answer), num: true },
+          explain: { en: `Rule: ${rel.en}. Apply it to ${c}.`, id: `Aturan: ${rel.id}. Pakai aturan ini untuk ${c}.` }
+        };
+      }
+
+      if (sub === 'analogy') {
+        const gi = rnd(ANALOGY_GROUPS.length);
+        const group = ANALOGY_GROUPS[gi];
+        const [p1, p2] = shuffle(group.pairs).slice(0, 2);
+        const answer = p2[1];
+        const decoyPool = [];
+        ANALOGY_GROUPS.forEach((g, i) => { if (i !== gi) g.pairs.forEach(p => decoyPool.push(p[1])); });
+        const wrongs = shuffle([...new Set(decoyPool)].filter(x => x !== answer)).slice(0, 5);
+        const options = shuffle([...wrongs, answer]);
+        return {
+          kind: 'logic',
+          qTitle: t('qAnalogy'),
+          render(el) {
+            const row = document.createElement('div');
+            row.className = 'analogy-row';
+            [[p1[0]],[':'],[p1[1]],['::'],[p2[0]],[':'],['?','missing']].forEach(([txt, cls]) => {
+              const dv = document.createElement('div');
+              if (cls === 'missing') { dv.className = 'tile missing'; dv.textContent = '?'; }
+              else if (txt === ':' || txt === '::') { dv.className = 'analogy-sep'; dv.textContent = txt; }
+              else { dv.className = 'tile'; dv.textContent = txt; }
+              row.appendChild(dv);
+            });
+            el.appendChild(row);
+          },
+          options: options.map(o => ({ face: o })),
+          correctIdx: options.indexOf(answer),
+          answer: { face: answer },
+          explain: {
+            en: `Pair shows ${group.rel.en}: ${p1[0]} → ${p1[1]}, so ${p2[0]} → ${answer}.`,
+            id: `Pasangan: ${group.rel.id}: ${p1[0]} → ${p1[1]}, jadi ${p2[0]} → ${answer}.`
+          }
+        };
+      }
+
+      const [gA, gB] = shuffle(ODD_GROUPS).slice(0, 2);
+      const mains = shuffle(gA.items).slice(0, 3);
+      const odd = pick(gB.items);
+      const items = shuffle([...mains, odd]);
+      const correctIdx = items.indexOf(odd);
+      return {
+        kind: 'odd',
+        qTitle: t('qOdd'),
+        oddMode: true,
+        render() {},
+        options: items.map(o => ({ face: o })),
+        correctIdx,
+        answer: { face: odd },
+        explain: {
+          en: `${odd} belongs to ${gB.name.en}; the other three are ${gA.name.en}.`,
+          id: `${odd} termasuk ${gB.name.id}; tiga lainnya adalah ${gA.name.id}.`
+        }
+      };
+    }
+
+    const GENERATORS = { arrow: genArrows, number: genNumbers, shape: genShapes, logic: genLogic };
+    function genQuestion(category, d) {
+      const cat = category === 'mix' ? pick(['arrow','number','shape','logic']) : category;
+      return GENERATORS[cat](d);
+    }
+
+    /* ============ game state ============ */
+    const QUESTIONS_PER_LEVEL = 8;
+    let sel = { category: store.get('cat', 'arrow'), mode: store.get('mode', 'level') };
+    let game = null;
+    let timerId = null;
+
+    function difficultyFor() {
+      if (game.mode === 'level') return Math.min(3, Math.ceil(game.level / 2));
+      return Math.min(3, 1 + Math.floor(game.correct / 5));
+    }
+
+    function startGame() {
+      clearInterval(timerId);
+      game = {
+        category: sel.category,
+        mode: sel.mode,
+        level: sel.mode === 'level' ? store.get('level_' + sel.category, 1) : 1,
+        qNum: 0,
+        correct: 0,
+        streak: 0,
+        bestStreakRun: 0,
+        timeLeft: 60,
+        answered: false,
+        misses: 0,
+        current: null
+      };
+      const playedCats = store.get('playedCats', []);
+      if (!playedCats.includes(sel.category)) {
+        playedCats.push(sel.category); store.set('playedCats', playedCats);
+      }
+      setMascot('🤔', t('mascotThinking'), 'bump');
+      showScreen('game');
+      if (game.mode === 'timed') {
+        timerId = setInterval(() => {
+          game.timeLeft--;
+          renderHud();
+          if (game.timeLeft <= 0) { clearInterval(timerId); endRun(); }
+        }, 1000);
+      }
+      nextQuestion();
+    }
+
+    function nextQuestion() {
+      game.qNum++;
+      game.answered = false;
+      game.current = genQuestion(game.category, difficultyFor());
+      renderQuestion();
+    }
+
+    function endRun() {
+      clearInterval(timerId);
+      const r = (id) => document.getElementById(id);
+      let title, scoreLine, bestLine = '', stars = 0;
+
+      if (game.mode === 'level') {
+        title = tf('levelDone', { n: game.level });
+        scoreLine = tf('scoreOf', { s: game.correct, t: QUESTIONS_PER_LEVEL });
+        stars = game.correct >= 8 ? 3 : game.correct >= 6 ? 2 : game.correct >= 4 ? 1 : 0;
+        if (stars === 3) unlockBadge('perfect');
+        if (stars >= 1) {
+          const key = 'level_' + game.category;
+          const cur = store.get(key, 1);
+          if (game.level >= cur) store.set(key, game.level + 1);
+        }
+        r('result-stars').innerHTML = [1,2,3].map(i => `<span class="${i <= stars ? '' : 'dim'}">⭐</span>`).join('');
+        r('result-best').textContent = stars === 0 ? t('tryAgainStars') : '';
+        r('result-next').textContent = stars >= 1 ? t('nextLevel') : t('playAgain');
+        r('result-next').onclick = startGame;
+      } else if (game.mode === 'timed') {
+        title = t('timeUp');
+        scoreLine = tf('timedScore', { s: game.correct });
+        const bk = 'best_timed_' + game.category;
+        const best = store.get(bk, 0);
+        if (game.correct > best) { store.set(bk, game.correct); bestLine = t('newBest'); }
+        else bestLine = tf('best', { b: best });
+        r('result-stars').textContent = '⏱️';
+        r('result-best').textContent = bestLine;
+        r('result-next').textContent = t('playAgain');
+        r('result-next').onclick = startGame;
+      } else {
+        title = t('runOver');
+        scoreLine = tf('streakScore', { s: game.bestStreakRun });
+        const bk = 'best_streak_' + game.category;
+        const best = store.get(bk, 0);
+        if (game.bestStreakRun > best) { store.set(bk, game.bestStreakRun); bestLine = t('newBest'); }
+        else bestLine = tf('best', { b: best });
+        r('result-stars').textContent = '🔥';
+        r('result-best').textContent = bestLine;
+        r('result-next').textContent = t('playAgain');
+        r('result-next').onclick = startGame;
+      }
+
+      r('result-title').textContent = title;
+      r('result-score').textContent = scoreLine;
+      r('result-home').textContent = t('home');
+      r('result-home').onclick = () => { renderHome(); showScreen('home'); };
+      if (game.correct > 0 || game.bestStreakRun > 2) { audio.win(); setMascot('🥳', t('mascotWin'), 'bump'); }
+      else setMascot('🦉', '', null);
+      showScreen('result');
+    }
+
+    /* ============ badges ============ */
+    const BADGE_IDS = ['first','streak5','streak10','perfect','brain50','explorer'];
+    function unlockBadge(id) {
+      const owned = store.get('badges', []);
+      if (owned.includes(id)) return;
+      owned.push(id);
+      store.set('badges', owned);
+      const toast = document.getElementById('toast');
+      toast.textContent = t('newBadge') + ' ' + T[lang].badgeNames[id];
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+    function checkBadges() {
+      if (game.correct >= 1) unlockBadge('first');
+      if (game.streak >= 5) unlockBadge('streak5');
+      if (game.streak >= 10) unlockBadge('streak10');
+      if (store.get('totalCorrect', 0) >= 50) unlockBadge('brain50');
+      const played = store.get('playedCats', []);
+      if (['arrow','number','shape','logic'].every(c => played.includes(c))) unlockBadge('explorer');
+    }
+
+    /* ============ render ============ */
+    function showScreen(name) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + name).classList.add('active');
+      const back = document.getElementById('back-btn');
+      if (name === 'home') back.setAttribute('hidden', '');
+      else back.removeAttribute('hidden');
+    }
+
+    function renderHud() {
+      const hud = document.getElementById('hud');
+      const items = [];
+      if (game.mode === 'level') items.push([game.level, t('hudLevel')]);
+      items.push([game.correct, t('hudScore')]);
+      if (game.mode === 'level') items.push([game.qNum + '/' + QUESTIONS_PER_LEVEL, t('hudQ')]);
+      if (game.mode === 'endless') items.push(['🔥' + game.streak, t('hudStreak')]);
+      if (game.mode === 'timed') items.push([game.timeLeft + 's', t('hudTime'), game.timeLeft <= 10]);
+      hud.innerHTML = items.map(([n, l, low]) =>
+        `<div class="hud-item"><div class="hud-num${low ? ' timer-low' : ''}">${n}</div><div class="hud-label">${l}</div></div>`
+      ).join('');
+    }
+
+    function renderQuestion() {
+      const q = game.current;
+      renderHud();
+      document.getElementById('q-title').textContent = q.qTitle;
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('feedback').className = 'feedback';
+      const hb = document.getElementById('hint-box');
+      hb.classList.remove('show');
+      hb.textContent = '';
+      document.getElementById('hint-btn').disabled = false;
+      document.getElementById('hint-btn').textContent = t('hint');
+      document.getElementById('next-btn').style.display = 'none';
+
+      const area = document.getElementById('puzzle-area');
+      area.innerHTML = '';
+      const boardWrap = document.getElementById('board-wrap');
+      boardWrap.style.display = q.oddMode ? 'none' : 'flex';
+      if (!q.oddMode) q.render(area);
+
+      document.getElementById('choices-label').textContent = q.oddMode ? t('pickOdd') : t('pickTile');
+
+      const letters = ['A','B','C','D','E','F'];
+      const choicesEl = document.getElementById('choices');
+      choicesEl.className = 'choices' + (q.options.length === 4 ? ' four' : '');
+      choicesEl.innerHTML = '';
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        const face = document.createElement('span');
+        face.className = 'face' + (opt.num ? ' num' : '');
+        if (opt.color) face.style.color = opt.color;
+        if (opt.fontSize) face.style.fontSize = opt.fontSize;
+        face.textContent = opt.face;
+        const letter = document.createElement('span');
+        letter.className = 'letter';
+        letter.textContent = letters[i];
+        btn.appendChild(face);
+        btn.appendChild(letter);
+        btn.onclick = () => handleChoice(i, btn);
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function handleChoice(i, btn) {
+      const q = game.current;
+      if (game.answered) return;
+      game.answered = true;
+      const buttons = document.querySelectorAll('.choice-btn');
+      buttons.forEach(b => b.disabled = true);
+      document.getElementById('hint-btn').disabled = true;
+
+      const fb = document.getElementById('feedback');
+      const isRight = i === q.correctIdx;
+
+      if (isRight) {
+        game.correct++;
+        game.streak++;
+        game.bestStreakRun = Math.max(game.bestStreakRun, game.streak);
+        store.set('totalCorrect', store.get('totalCorrect', 0) + 1);
+        btn.classList.add('correct');
+        fb.textContent = pick(T[lang].correctMsgs);
+        fb.className = 'feedback correct';
+        audio.correct();
+        if (game.streak >= 3) setMascot('🤩', tf('mascotStreak', { n: game.streak }), 'bump');
+        else setMascot('😄', t('mascotCorrect'), 'bump');
+      } else {
+        game.streak = 0;
+        btn.classList.add('wrong');
+        buttons[q.correctIdx].classList.add('correct');
+        fb.textContent = pick(T[lang].wrongMsgs);
+        fb.className = 'feedback wrong';
+        audio.wrong();
+        setMascot('😮', t('mascotWrong'), 'shake');
+      }
+
+      if (typeof q.gridMissing === 'number') {
+        const tiles = document.querySelectorAll('#puzzle-area .tile');
+        const mt = tiles[q.gridMissing];
+        if (mt) {
+          mt.classList.remove('missing');
+          mt.classList.add('reveal');
+          mt.textContent = q.answer.face;
+          if (q.answer.color) { mt.style.background = q.answer.color; mt.style.color = '#fff'; }
+          else mt.style.background = '#fff';
+          mt.style.fontSize = q.answer.fontSize || (q.kind === 'arrows' ? '2.2rem' : '');
+          if (q.answer.num) mt.classList.add('num');
+        }
+      }
+
+      if (!isRight) {
+        const hb = document.getElementById('hint-box');
+        hb.textContent = '💡 ' + q.explain[lang];
+        hb.classList.add('show');
+      }
+
+      checkBadges();
+      renderHud();
+
+      if (game.mode === 'endless') game.misses = (game.misses || 0) + (isRight ? 0 : 1);
+
+      const nb = document.getElementById('next-btn');
+      const isLevelEnd = game.mode === 'level' && game.qNum >= QUESTIONS_PER_LEVEL;
+      const isEndlessEnd = game.mode === 'endless' && (game.misses || 0) >= 3;
+      nb.textContent = (isLevelEnd || isEndlessEnd) ? t('finish') : t('next');
+      nb.style.display = 'inline-block';
+      nb.onclick = () => {
+        setMascot('🤔', '', 'bump');
+        if (isLevelEnd || isEndlessEnd) endRun();
+        else nextQuestion();
+      };
+
+      if (game.mode === 'timed') {
+        setTimeout(() => { if (game.timeLeft > 0) nextQuestion(); }, isRight ? 600 : 1300);
+        nb.style.display = 'none';
+      }
+    }
+
+    document.getElementById('hint-btn').onclick = () => {
+      if (!game || game.answered) return;
+      const hb = document.getElementById('hint-box');
+      hb.textContent = '💡 ' + game.current.explain[lang];
+      hb.classList.add('show');
+      audio.tick();
+    };
+
+    /* ============ home render ============ */
+    const CATS = [
+      { id: 'arrow', tKey: 'catArrow', color: 'var(--c-arrow)', tint: 'var(--tint-arrow)' },
+      { id: 'number', tKey: 'catNumber', color: 'var(--c-number)', tint: 'var(--tint-number)' },
+      { id: 'shape', tKey: 'catShape', color: 'var(--c-shape)', tint: 'var(--tint-shape)' },
+      { id: 'logic', tKey: 'catLogic', color: 'var(--c-logic)', tint: 'var(--tint-logic)' },
+      { id: 'mix', tKey: 'catMix', color: 'var(--c-mix)', tint: 'var(--tint-mix)', wide: true }
+    ];
+    const MODES = [
+      { id: 'level', tKey: 'modeLevel' },
+      { id: 'endless', tKey: 'modeEndless' },
+      { id: 'timed', tKey: 'modeTimed' }
+    ];
+
+    function renderHome() {
+      document.querySelectorAll('[data-t]').forEach(el => {
+        const key = el.dataset.t;
+        if (T[lang][key] != null) el.textContent = t(key);
+      });
+
+      const cg = document.getElementById('cat-grid');
+      cg.innerHTML = '';
+      CATS.forEach(c => {
+        const [ico, nm, ds] = t(c.tKey);
+        const d = document.createElement('div');
+        d.className = 'cat-card' + (c.wide ? ' wide' : '') + (sel.category === c.id ? ' selected' : '');
+        d.style.setProperty('--sel', c.color);
+        d.style.setProperty('--tint', c.tint);
+        d.innerHTML = c.wide
+          ? `<span class="ico">${ico}</span><div class="text-wrap"><span class="nm">${nm}</span><div class="ds">${ds}</div></div>`
+          : `<span class="ico">${ico}</span><span class="nm">${nm}</span><div class="ds">${ds}</div>`;
+        d.onclick = () => { sel.category = c.id; store.set('cat', c.id); audio.tick(); renderHome(); };
+        cg.appendChild(d);
+      });
+
+      const mr = document.getElementById('mode-row');
+      mr.innerHTML = '';
+      MODES.forEach(m => {
+        const [ico, nm, ds] = t(m.tKey);
+        const d = document.createElement('div');
+        d.className = 'mode-card' + (sel.mode === m.id ? ' selected' : '');
+        d.innerHTML = `<span class="ico">${ico}</span><span class="nm">${nm}</span><div class="ds">${ds}</div>`;
+        d.onclick = () => { sel.mode = m.id; store.set('mode', m.id); audio.tick(); renderHome(); };
+        mr.appendChild(d);
+      });
+
+      const owned = store.get('badges', []);
+      const shelf = document.getElementById('badge-shelf');
+      shelf.innerHTML = '';
+      BADGE_IDS.forEach(id => {
+        const chip = document.createElement('div');
+        chip.className = 'badge-chip' + (owned.includes(id) ? '' : ' locked');
+        chip.textContent = T[lang].badgeNames[id];
+        shelf.appendChild(chip);
+      });
+
+      document.getElementById('stats-line').textContent = tf('statsLine', { n: store.get('totalCorrect', 0) });
+
+      /* update settings segmented controls */
+      document.querySelectorAll('#lang-seg button').forEach(b => b.classList.toggle('on', b.dataset.val === lang));
+      document.querySelectorAll('#sound-seg button').forEach(b => b.classList.toggle('on', b.dataset.val === (soundOn ? 'on' : 'off')));
+
+      setMascot('🦉', t('mascotHome'), 'bump');
+    }
+
+    /* ============ settings + wiring ============ */
+    document.getElementById('play-btn').onclick = () => { audio.tick(); startGame(); };
+    document.getElementById('back-btn').onclick = () => {
+      clearInterval(timerId);
+      audio.tick();
+      renderHome();
+      showScreen('home');
+    };
+
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsPanel = document.getElementById('settings-panel');
+    const scrim = document.getElementById('scrim');
+    function openSettings() { settingsPanel.classList.add('show'); scrim.classList.add('show'); audio.tick(); }
+    function closeSettings() { settingsPanel.classList.remove('show'); scrim.classList.remove('show'); }
+    settingsBtn.onclick = () => settingsPanel.classList.contains('show') ? closeSettings() : openSettings();
+    scrim.onclick = closeSettings;
+
+    document.querySelectorAll('#lang-seg button').forEach(b => {
+      b.onclick = () => {
+        lang = b.dataset.val; store.set('lang', lang);
+        audio.tick();
+        renderHome();
+        if (document.getElementById('screen-game').classList.contains('active') && game && game.current) {
+          document.getElementById('q-title').textContent = game.current.qTitle = (game.current.kind === 'arrows' ? t('qArrows') : game.current.kind === 'numbers' ? t('qNumbers') : game.current.kind === 'shapes' ? t('qShapes') : game.current.kind === 'odd' ? t('qOdd') : t('qAnalogy'));
+          document.getElementById('choices-label').textContent = game.current.oddMode ? t('pickOdd') : t('pickTile');
+          document.getElementById('hint-btn').textContent = t('hint');
+          renderHud();
+        }
+      };
+    });
+    document.querySelectorAll('#sound-seg button').forEach(b => {
+      b.onclick = () => {
+        soundOn = b.dataset.val === 'on';
+        store.set('sound', soundOn);
+        if (soundOn) audio.correct();
+        document.querySelectorAll('#sound-seg button').forEach(x => x.classList.toggle('on', x.dataset.val === b.dataset.val));
+      };
+    });
+    document.getElementById('reset-btn').onclick = () => {
+      if (confirm(t('resetConfirm'))) {
+        ['cat','mode','totalCorrect','playedCats','badges'].forEach(k => store.set(k, k==='playedCats'||k==='badges' ? [] : (k==='totalCorrect'?0:k==='cat'?'arrow':'level')));
+        ['arrow','number','shape','logic','mix'].forEach(c => {
+          store.set('level_' + c, 1);
+          store.set('best_timed_' + c, 0);
+          store.set('best_streak_' + c, 0);
+        });
+        sel = { category: 'arrow', mode: 'level' };
+        closeSettings();
+        renderHome();
+      }
+    };
+
+    /* ============ PWA ============ */
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+
+    /* ============ boot ============ */
+    showScreen('home');
+    renderHome();
+  }
+}
+</script>
+</body>
+</html>
